@@ -171,11 +171,11 @@ fn render_fruit_modal(frame: &mut Frame, modal: &crate::ui::modal::ModalState, t
        let inner = Layout::default()
            .direction(Direction::Vertical)
            .constraints([
-               Constraint::Length(2),
-               Constraint::Length(2),
-               Constraint::Length(2),
-               Constraint::Length(2),
-               Constraint::Length(2),
+               Constraint::Length(3),
+               Constraint::Length(3),
+               Constraint::Length(3),
+               Constraint::Length(3),
+               Constraint::Min(0),
            ])
            .split(inner_area);
 

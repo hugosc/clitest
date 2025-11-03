@@ -114,14 +114,15 @@ fn handle_delete_confirm(state: &mut AppState, key: KeyEvent) -> Result<()> {
 fn handle_add_fruit_modal(state: &mut AppState, key: KeyEvent) -> Result<()> {
     if let Some(modal) = &mut state.modal {
         match key.code {
+            // Handle close commands first (before character input)
+            KeyCode::Esc | KeyCode::Char('q') => {
+                state.modal = None;
+                state.mode = AppMode::Normal;
+            }
             KeyCode::Tab => modal.next_field(),
             KeyCode::BackTab => modal.prev_field(),
             KeyCode::Backspace => modal.backspace(),
             KeyCode::Char(c) => modal.insert_char(c),
-            KeyCode::Esc => {
-                state.modal = None;
-                state.mode = AppMode::Normal;
-            }
             KeyCode::Enter => {
                 match modal.validate_and_build() {
                     Ok(fruit) => {
@@ -143,14 +144,15 @@ fn handle_add_fruit_modal(state: &mut AppState, key: KeyEvent) -> Result<()> {
 fn handle_edit_fruit_modal(state: &mut AppState, key: KeyEvent) -> Result<()> {
     if let Some(modal) = &mut state.modal {
         match key.code {
+            // Handle close commands first (before character input)
+            KeyCode::Esc | KeyCode::Char('q') => {
+                state.modal = None;
+                state.mode = AppMode::Normal;
+            }
             KeyCode::Tab => modal.next_field(),
             KeyCode::BackTab => modal.prev_field(),
             KeyCode::Backspace => modal.backspace(),
             KeyCode::Char(c) => modal.insert_char(c),
-            KeyCode::Esc => {
-                state.modal = None;
-                state.mode = AppMode::Normal;
-            }
             KeyCode::Enter => {
                 match modal.validate_and_build() {
                     Ok(fruit) => {
