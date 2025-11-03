@@ -1,8 +1,11 @@
 # clitest — Fruit CLI demo (branch: fruitcli)
 
-This is a tiny learning demo that integrates the `fruitdata` library
-(https://github.com/hugosc/fruitdata, branch `fruitcrate`) into this simple
-ratatui TUI so you can practice using another crate in a UI.
+This branch (`fruitcli`) is a small learning demo that integrates the `fruitdata` library
+(https://github.com/hugosc/fruitdata, branch `fruitcrate`) into a simple
+ratatui TUI so you can practice using an external crate as a data provider.
+
+Note: the `main` branch contains only an empty TUI scaffold; this `fruitcli`
+branch adds the `fruitdata`-backed catalogue and UI to that base.
 
 What it shows
 - Left pane: selectable list of fruit names.
