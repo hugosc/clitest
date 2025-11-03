@@ -57,7 +57,7 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
                 match save_catalogue(&state.fruits, "fruits.json") {
                     Ok(_) => {
                         state.dirty = false;
-                        // Silent success - don't show message that would block quit
+                        state.set_error("✓ Saved successfully".to_string());
                     }
                     Err(e) => {
                         state.set_error(format!("Failed to save: {}", e));
@@ -75,15 +75,22 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
             // In Normal mode, handle q/Esc specially for quit logic
             let should_quit = match key.code {
                 KeyCode::Char('q') | KeyCode::Esc => {
-                    // Only quit if there's no error message (user cleared the error first)
-                    if state.error_message.is_none() && !state.dirty {
-                        true
-                    } else if state.error_message.is_some() {
-                        state.clear_error();
-                        false
+                    // Check if we can quit
+                    let can_quit = state.error_message.is_none() && !state.dirty;
+                    
+                    // If there's a success message (starts with ✓), clear it and try again next time
+                    if let Some(err) = &state.error_message {
+                        if err.starts_with('✓') {
+                            state.clear_error();
+                            // Now that success message is cleared, check if we can quit
+                            state.error_message.is_none() && !state.dirty
+                        } else {
+                            // Real error: clear it first, don't quit yet
+                            state.clear_error();
+                            false
+                        }
                     } else {
-                        // dirty but no error shown yet, show error
-                        false
+                        can_quit
                     }
                 }
                 _ => {

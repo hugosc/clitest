@@ -31,15 +31,14 @@ pub fn render(frame: &mut Frame, state: &AppState) {
         render_delete_confirm_modal(frame);
     } else if state.mode == AppMode::Filter {
         render_filter_input(frame, state);
-    } else if state.mode == AppMode::AddFruit || state.mode == AppMode::EditFruit {
-        if let Some(modal) = &state.modal {
-            let title = if state.mode == AppMode::AddFruit {
-                "Add Fruit"
-            } else {
-                "Edit Fruit"
-            };
-            render_fruit_modal(frame, modal, title);
-        }
+    } else if (state.mode == AppMode::AddFruit || state.mode == AppMode::EditFruit)
+        && let Some(modal) = &state.modal {
+        let title = if state.mode == AppMode::AddFruit {
+            "Add Fruit"
+        } else {
+            "Edit Fruit"
+        };
+        render_fruit_modal(frame, modal, title);
     }
 }
 
