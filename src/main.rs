@@ -57,7 +57,7 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
                 match save_catalogue(&state.fruits, "fruits.json") {
                     Ok(_) => {
                         state.dirty = false;
-                        state.set_error("✓ Saved successfully".to_string());
+                        // Silent success - don't show message that would block quit
                     }
                     Err(e) => {
                         state.set_error(format!("Failed to save: {}", e));
