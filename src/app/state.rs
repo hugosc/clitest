@@ -15,6 +15,8 @@ pub enum AppMode {
     Filter,
     /// Confirming a delete action
     ConfirmDelete,
+    /// Showing help modal
+    Help,
 }
 
 /// Main application state

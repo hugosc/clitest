@@ -1,4 +1,4 @@
-use ratatui::crossterm::event::KeyCode;
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use crate::error::Result;
 use super::state::{AppState, AppMode};
 
@@ -6,7 +6,7 @@ use super::state::{AppState, AppMode};
 #[derive(Debug, Clone)]
 pub enum AppEvent {
     /// User pressed a key
-    KeyPress(KeyCode),
+    KeyPress(KeyEvent),
     /// Quit the application
     Quit,
 }
@@ -20,19 +20,26 @@ pub fn handle_event(state: &mut AppState, event: AppEvent) -> Result<bool> {
     Ok(false)
 }
 
-fn handle_key_press(state: &mut AppState, key: KeyCode) -> Result<()> {
+fn handle_key_press(state: &mut AppState, key: KeyEvent) -> Result<()> {
     match state.mode {
         AppMode::Normal => handle_normal_mode(state, key)?,
         AppMode::Filter => handle_filter_mode(state, key)?,
         AppMode::ConfirmDelete => handle_delete_confirm(state, key)?,
         AppMode::AddFruit => handle_add_fruit_modal(state, key)?,
         AppMode::EditFruit => handle_edit_fruit_modal(state, key)?,
+        AppMode::Help => handle_help_modal(state, key)?,
     }
     Ok(())
 }
 
-fn handle_normal_mode(state: &mut AppState, key: KeyCode) -> Result<()> {
-    match key {
+fn handle_normal_mode(state: &mut AppState, key: KeyEvent) -> Result<()> {
+    // Check for Ctrl+S to save
+    if key.code == KeyCode::Char('s') && key.modifiers.contains(KeyModifiers::CONTROL) {
+        // Save will be handled in main.rs
+        return Ok(());
+    }
+
+    match key.code {
         KeyCode::Char('q') | KeyCode::Esc => {
             if state.dirty {
                 state.set_error("Unsaved changes! Press Ctrl+S to save or press 'q' again to discard".to_string());
@@ -55,15 +62,15 @@ fn handle_normal_mode(state: &mut AppState, key: KeyCode) -> Result<()> {
         }
         KeyCode::Char('d') => state.mode = AppMode::ConfirmDelete,
         KeyCode::Char('?') => {
-            // TODO: Show help modal
+            state.mode = AppMode::Help;
         }
         _ => {}
     }
     Ok(())
 }
 
-fn handle_filter_mode(state: &mut AppState, key: KeyCode) -> Result<()> {
-    match key {
+fn handle_filter_mode(state: &mut AppState, key: KeyEvent) -> Result<()> {
+    match key.code {
         KeyCode::Esc => {
             state.mode = AppMode::Normal;
             state.clear_filter();
@@ -86,8 +93,8 @@ fn handle_filter_mode(state: &mut AppState, key: KeyCode) -> Result<()> {
     Ok(())
 }
 
-fn handle_delete_confirm(state: &mut AppState, key: KeyCode) -> Result<()> {
-    match key {
+fn handle_delete_confirm(state: &mut AppState, key: KeyEvent) -> Result<()> {
+    match key.code {
         KeyCode::Char('y') => {
             if let Some(idx) = state.selected_fruit_index() {
                 state.delete_fruit(idx)?;
@@ -104,9 +111,9 @@ fn handle_delete_confirm(state: &mut AppState, key: KeyCode) -> Result<()> {
     Ok(())
 }
 
-fn handle_add_fruit_modal(state: &mut AppState, key: KeyCode) -> Result<()> {
+fn handle_add_fruit_modal(state: &mut AppState, key: KeyEvent) -> Result<()> {
     if let Some(modal) = &mut state.modal {
-        match key {
+        match key.code {
             KeyCode::Tab => modal.next_field(),
             KeyCode::BackTab => modal.prev_field(),
             KeyCode::Backspace => modal.backspace(),
@@ -133,9 +140,9 @@ fn handle_add_fruit_modal(state: &mut AppState, key: KeyCode) -> Result<()> {
     Ok(())
 }
 
-fn handle_edit_fruit_modal(state: &mut AppState, key: KeyCode) -> Result<()> {
+fn handle_edit_fruit_modal(state: &mut AppState, key: KeyEvent) -> Result<()> {
     if let Some(modal) = &mut state.modal {
-        match key {
+        match key.code {
             KeyCode::Tab => modal.next_field(),
             KeyCode::BackTab => modal.prev_field(),
             KeyCode::Backspace => modal.backspace(),
@@ -160,6 +167,16 @@ fn handle_edit_fruit_modal(state: &mut AppState, key: KeyCode) -> Result<()> {
             }
             _ => {}
         }
+    }
+    Ok(())
+}
+
+fn handle_help_modal(state: &mut AppState, key: KeyEvent) -> Result<()> {
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('?') | KeyCode::Enter => {
+            state.mode = AppMode::Normal;
+        }
+        _ => {}
     }
     Ok(())
 }

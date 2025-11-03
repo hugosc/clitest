@@ -25,6 +25,8 @@ pub fn render(frame: &mut Frame, state: &AppState) {
     // Render any active modal or error on top
     if let Some(err) = &state.error_message {
         render_error_popup(frame, err);
+    } else if state.mode == AppMode::Help {
+        render_help_modal(frame);
     } else if state.mode == AppMode::ConfirmDelete {
         render_delete_confirm_modal(frame);
     } else if state.mode == AppMode::Filter {
@@ -256,4 +258,63 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
             Constraint::Percentage((100 - percent_x) / 2),
         ])
         .split(popup_layout[1])[1]
+}
+
+fn render_help_modal(frame: &mut Frame) {
+    let area = frame.area();
+    let width = (area.width * 70) / 100;
+    let height = (area.height * 80) / 100;
+    let x = (area.width - width) / 2;
+    let y = (area.height - height) / 2;
+    
+    let popup_area = Rect {
+        x,
+        y,
+        width,
+        height,
+    };
+
+    // Create the help text
+    let help_text = vec![
+        Line::from(vec![Span::styled("KEYBOARD SHORTCUTS", Style::default().add_modifier(Modifier::BOLD))]),
+        Line::from(""),
+        Line::from(vec![Span::styled("Navigation", Style::default().fg(Color::Cyan))]),
+        Line::from("  j/↓          - Move down"),
+        Line::from("  k/↑          - Move up"),
+        Line::from("  h/←          - Move left"),
+        Line::from("  l/→          - Move right"),
+        Line::from(""),
+        Line::from(vec![Span::styled("Actions", Style::default().fg(Color::Cyan))]),
+        Line::from("  /            - Filter by name"),
+        Line::from("  a            - Add new fruit"),
+        Line::from("  e            - Edit selected fruit"),
+        Line::from("  d            - Delete selected fruit"),
+        Line::from("  Ctrl+S       - Save changes"),
+        Line::from(""),
+        Line::from(vec![Span::styled("Modal Navigation", Style::default().fg(Color::Cyan))]),
+        Line::from("  Tab          - Next field"),
+        Line::from("  Shift+Tab    - Previous field"),
+        Line::from("  Enter        - Confirm"),
+        Line::from("  Esc          - Cancel/Back"),
+        Line::from(""),
+        Line::from(vec![Span::styled("Other", Style::default().fg(Color::Cyan))]),
+        Line::from("  ?            - Show help (this screen)"),
+        Line::from("  q            - Quit"),
+        Line::from(""),
+        Line::from(vec![Span::styled("Press Esc, q, or ? to close", Style::default().fg(Color::DarkGray).add_modifier(Modifier::ITALIC))]),
+    ];
+
+    let paragraph = Paragraph::new(help_text)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(" Help ")
+                .title_alignment(Alignment::Center)
+                .border_style(Style::default().fg(Color::Yellow))
+                .style(Style::default().bg(Color::Black))
+        )
+        .alignment(Alignment::Left);
+
+    frame.render_widget(Clear, popup_area);
+    frame.render_widget(paragraph, popup_area);
 }

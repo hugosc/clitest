@@ -3,7 +3,7 @@
 use color_eyre::eyre::Result;
 
 // Import types and functions from the local `fruitdata` crate
-use fruitdata::{initialise_fruit_catalogue, load_catalogue};
+use fruitdata::{initialise_fruit_catalogue, load_catalogue, save_catalogue};
 
 // Import UI and app modules
 mod app;
@@ -11,7 +11,7 @@ mod error;
 mod ui;
 
 use app::{AppEvent, AppState};
-use ratatui::crossterm::event::{self, Event, KeyCode};
+use ratatui::crossterm::event::{self, Event, KeyCode, KeyModifiers};
 
 // The main() function is where every Rust program starts executing.
 fn main() -> Result<()> {
@@ -52,6 +52,20 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
 
         // Handle user input
         if let Event::Key(key) = event::read()? {
+            // Check for Ctrl+S to save
+            if key.code == KeyCode::Char('s') && key.modifiers.contains(KeyModifiers::CONTROL) {
+                match save_catalogue(&state.fruits, "fruits.json") {
+                    Ok(_) => {
+                        state.dirty = false;
+                        state.set_error("✓ Saved successfully".to_string());
+                    }
+                    Err(e) => {
+                        state.set_error(format!("Failed to save: {}", e));
+                    }
+                }
+                continue;
+            }
+
             let should_quit = match key.code {
                 KeyCode::Char('q') | KeyCode::Esc => {
                     // Only quit if there's no error message (user cleared the error first)
@@ -67,7 +81,7 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
                 }
                 _ => {
                     // Process other key events
-                    app::handle_event(&mut state, AppEvent::KeyPress(key.code))?;
+                    app::handle_event(&mut state, AppEvent::KeyPress(key))?;
                     false
                 }
             };
