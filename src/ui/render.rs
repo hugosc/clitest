@@ -1,10 +1,12 @@
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     text::{Line, Span},
+    style::{Color, Modifier, Style},
     widgets::{Block, Borders, List, ListItem, Paragraph, Clear},
     Frame,
 };
 use crate::app::state::{AppState, AppMode};
+use crate::ui::modal::InputField;
 
 pub fn render(frame: &mut Frame, state: &AppState) {
     // Main layout
@@ -27,6 +29,15 @@ pub fn render(frame: &mut Frame, state: &AppState) {
         render_delete_confirm_modal(frame);
     } else if state.mode == AppMode::Filter {
         render_filter_input(frame, state);
+    } else if state.mode == AppMode::AddFruit || state.mode == AppMode::EditFruit {
+        if let Some(modal) = &state.modal {
+            let title = if state.mode == AppMode::AddFruit {
+                "Add Fruit"
+            } else {
+                "Edit Fruit"
+            };
+            render_fruit_modal(frame, modal, title);
+        }
     }
 }
 
@@ -102,9 +113,9 @@ fn render_delete_confirm_modal(frame: &mut Frame) {
         Line::from(""),
         Line::from(vec![
             Span::raw("["),
-            Span::styled("Y", ratatui::style::Style::default().fg(ratatui::style::Color::Yellow)),
+            Span::styled("Y", Style::default().fg(Color::Yellow)),
             Span::raw("]es  ["),
-            Span::styled("N", ratatui::style::Style::default().fg(ratatui::style::Color::Yellow)),
+            Span::styled("N", Style::default().fg(Color::Yellow)),
             Span::raw("]o"),
         ]),
     ];
@@ -114,6 +125,104 @@ fn render_delete_confirm_modal(frame: &mut Frame) {
         .alignment(Alignment::Center);
 
     frame.render_widget(para, popup_area);
+}
+
+fn render_fruit_modal(frame: &mut Frame, modal: &crate::ui::modal::ModalState, title: &str) {
+    let popup_area = centered_rect(60, 50, frame.area());
+    frame.render_widget(Clear, popup_area);
+
+    let inner = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Length(3),
+            Constraint::Length(3),
+            Constraint::Length(3),
+            Constraint::Length(2),
+            Constraint::Min(0),
+        ])
+        .split(popup_area);
+
+    // Name field
+    let name_style = if modal.focused_field == InputField::Name {
+        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+    };
+    let name_widget = Paragraph::new(modal.name.as_str())
+        .block(Block::default().title("Name").borders(Borders::ALL))
+        .style(name_style);
+    frame.render_widget(name_widget, inner[0]);
+
+    // Length field
+    let length_style = if modal.focused_field == InputField::Length {
+        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+    };
+    let length_widget = Paragraph::new(modal.length.as_str())
+        .block(Block::default().title("Length").borders(Borders::ALL))
+        .style(length_style);
+    frame.render_widget(length_widget, inner[1]);
+
+    // Width field
+    let width_style = if modal.focused_field == InputField::Width {
+        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+    };
+    let width_widget = Paragraph::new(modal.width.as_str())
+        .block(Block::default().title("Width").borders(Borders::ALL))
+        .style(width_style);
+    frame.render_widget(width_widget, inner[2]);
+
+    // Height field
+    let height_style = if modal.focused_field == InputField::Height {
+        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+    };
+    let height_widget = Paragraph::new(modal.height.as_str())
+        .block(Block::default().title("Height").borders(Borders::ALL))
+        .style(height_style);
+    frame.render_widget(height_widget, inner[3]);
+
+    // Instructions
+    let instructions = Line::from(vec![
+        Span::raw("["),
+        Span::styled("Tab", Style::default().fg(Color::Cyan)),
+        Span::raw("] next  ["),
+        Span::styled("S-Tab", Style::default().fg(Color::Cyan)),
+        Span::raw("] prev  ["),
+        Span::styled("Enter", Style::default().fg(Color::Green)),
+        Span::raw("] save  ["),
+        Span::styled("Esc", Style::default().fg(Color::Red)),
+        Span::raw("] cancel"),
+    ]);
+    let instructions_widget = Paragraph::new(instructions)
+        .block(Block::default().borders(Borders::ALL))
+        .alignment(Alignment::Center);
+    frame.render_widget(instructions_widget, inner[4]);
+
+    // Error message if present
+    if let Some(err) = &modal.error {
+        let error_area = centered_rect(50, 15, frame.area());
+        frame.render_widget(
+            Paragraph::new(err.as_str())
+                .block(Block::default().title("Error").borders(Borders::ALL))
+                .style(Style::default().fg(Color::Red))
+                .alignment(Alignment::Center),
+            error_area,
+        );
+    }
+
+    // Border and title for the modal
+    let border = Block::default()
+        .title(title)
+        .borders(Borders::ALL)
+        .border_type(ratatui::widgets::BorderType::Rounded);
+    frame.render_widget(border, popup_area);
 }
 
 fn render_error_popup(frame: &mut Frame, message: &str) {

@@ -1,5 +1,6 @@
 use fruitdata::FruitDimensions;
 use crate::error::Result;
+use crate::ui::modal::ModalState;
 
 /// Represents the current application mode
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -33,6 +34,8 @@ pub struct AppState {
     pub filtered_indices: Vec<usize>,
     /// Error message to display
     pub error_message: Option<String>,
+    /// Modal state for add/edit operations
+    pub modal: Option<ModalState>,
 }
 
 impl AppState {
@@ -47,6 +50,7 @@ impl AppState {
             filter_query: String::new(),
             filtered_indices,
             error_message: None,
+            modal: None,
         }
     }
 

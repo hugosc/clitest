@@ -22,14 +22,13 @@ pub fn handle_event(state: &mut AppState, event: AppEvent) -> Result<bool> {
 
 fn handle_key_press(state: &mut AppState, key: KeyCode) -> Result<()> {
     match state.mode {
-        AppMode::Normal => handle_normal_mode(state, key),
-        AppMode::Filter => handle_filter_mode(state, key),
-        AppMode::ConfirmDelete => handle_delete_confirm(state, key),
-        AppMode::AddFruit | AppMode::EditFruit => {
-            // These modes are handled by the modal system
-            Ok(())
-        }
+        AppMode::Normal => handle_normal_mode(state, key)?,
+        AppMode::Filter => handle_filter_mode(state, key)?,
+        AppMode::ConfirmDelete => handle_delete_confirm(state, key)?,
+        AppMode::AddFruit => handle_add_fruit_modal(state, key)?,
+        AppMode::EditFruit => handle_edit_fruit_modal(state, key)?,
     }
+    Ok(())
 }
 
 fn handle_normal_mode(state: &mut AppState, key: KeyCode) -> Result<()> {
@@ -44,8 +43,16 @@ fn handle_normal_mode(state: &mut AppState, key: KeyCode) -> Result<()> {
         KeyCode::Up | KeyCode::Char('k') => state.select_previous(),
         KeyCode::Down | KeyCode::Char('j') => state.select_next(),
         KeyCode::Char('/') => state.mode = AppMode::Filter,
-        KeyCode::Char('a') => state.mode = AppMode::AddFruit,
-        KeyCode::Char('e') => state.mode = AppMode::EditFruit,
+        KeyCode::Char('a') => {
+            state.modal = Some(crate::ui::modal::ModalState::new());
+            state.mode = AppMode::AddFruit;
+        }
+        KeyCode::Char('e') => {
+            if let Some(fruit) = state.selected_fruit() {
+                state.modal = Some(crate::ui::modal::ModalState::from_fruit(fruit));
+                state.mode = AppMode::EditFruit;
+            }
+        }
         KeyCode::Char('d') => state.mode = AppMode::ConfirmDelete,
         KeyCode::Char('?') => {
             // TODO: Show help modal
@@ -93,6 +100,66 @@ fn handle_delete_confirm(state: &mut AppState, key: KeyCode) -> Result<()> {
             state.clear_error();
         }
         _ => {}
+    }
+    Ok(())
+}
+
+fn handle_add_fruit_modal(state: &mut AppState, key: KeyCode) -> Result<()> {
+    if let Some(modal) = &mut state.modal {
+        match key {
+            KeyCode::Tab => modal.next_field(),
+            KeyCode::BackTab => modal.prev_field(),
+            KeyCode::Backspace => modal.backspace(),
+            KeyCode::Char(c) => modal.insert_char(c),
+            KeyCode::Esc => {
+                state.modal = None;
+                state.mode = AppMode::Normal;
+            }
+            KeyCode::Enter => {
+                match modal.validate_and_build() {
+                    Ok(fruit) => {
+                        state.add_fruit(fruit)?;
+                        state.modal = None;
+                        state.mode = AppMode::Normal;
+                    }
+                    Err(_) => {
+                        // Keep modal open with error showing
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+fn handle_edit_fruit_modal(state: &mut AppState, key: KeyCode) -> Result<()> {
+    if let Some(modal) = &mut state.modal {
+        match key {
+            KeyCode::Tab => modal.next_field(),
+            KeyCode::BackTab => modal.prev_field(),
+            KeyCode::Backspace => modal.backspace(),
+            KeyCode::Char(c) => modal.insert_char(c),
+            KeyCode::Esc => {
+                state.modal = None;
+                state.mode = AppMode::Normal;
+            }
+            KeyCode::Enter => {
+                match modal.validate_and_build() {
+                    Ok(fruit) => {
+                        if let Some(idx) = state.selected_fruit_index() {
+                            state.update_fruit(idx, fruit)?;
+                        }
+                        state.modal = None;
+                        state.mode = AppMode::Normal;
+                    }
+                    Err(_) => {
+                        // Keep modal open with error showing
+                    }
+                }
+            }
+            _ => {}
+        }
     }
     Ok(())
 }
