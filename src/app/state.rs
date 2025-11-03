@@ -114,17 +114,18 @@ impl AppState {
         !self.filter_query.is_empty()
     }
 
-    /// Update the filter and rebuild filtered_indices
-    pub fn update_filter(&mut self, query: &str) {
-        self.filter_query = query.to_lowercase();
-        self.filtered_indices = self.fruits
-            .iter()
-            .enumerate()
-            .filter(|(_, fruit)| fruit.name.to_lowercase().contains(&self.filter_query))
-            .map(|(i, _)| i)
-            .collect();
-        self.selected_index = 0;
-    }
+     /// Update the filter and rebuild filtered_indices
+     pub fn update_filter(&mut self, query: &str) {
+         self.filter_query = query.to_string();  // Store original case for display
+         let query_lower = query.to_lowercase();  // Convert to lowercase for comparison
+         self.filtered_indices = self.fruits
+             .iter()
+             .enumerate()
+             .filter(|(_, fruit)| fruit.name.to_lowercase().contains(&query_lower))
+             .map(|(i, _)| i)
+             .collect();
+         self.selected_index = 0;
+     }
 
     /// Clear the filter
     pub fn clear_filter(&mut self) {

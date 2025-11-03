@@ -94,16 +94,29 @@ fn render_details(frame: &mut Frame, state: &AppState, area: Rect) {
 }
 
 fn render_filter_input(frame: &mut Frame, state: &AppState) {
-    let popup_area = centered_rect(60, 10, frame.area());
+     let popup_area = centered_rect(60, 15, frame.area());
 
-    frame.render_widget(Clear, popup_area);
-    let text = format!("> {}", state.filter_query);
-    let para = Paragraph::new(text)
-        .block(Block::default().title("Search").borders(Borders::ALL))
-        .alignment(Alignment::Left);
+     frame.render_widget(Clear, popup_area);
+     
+     // Create a search prompt with the current query
+     let lines = vec![
+         Line::from(vec![
+             Span::raw("Enter search query ("),
+             Span::styled("Esc", Style::default().fg(Color::Red)),
+             Span::raw(" to cancel, "),
+             Span::styled("Enter", Style::default().fg(Color::Green)),
+             Span::raw(" to confirm):"),
+         ]),
+         Line::from(""),
+         Line::from(format!("> {}", state.filter_query)),
+     ];
+     
+     let para = Paragraph::new(lines)
+         .block(Block::default().title("Filter Fruits").borders(Borders::ALL))
+         .alignment(Alignment::Left);
 
-    frame.render_widget(para, popup_area);
-}
+     frame.render_widget(para, popup_area);
+ }
 
 fn render_delete_confirm_modal(frame: &mut Frame) {
     let popup_area = centered_rect(50, 15, frame.area());
@@ -130,102 +143,117 @@ fn render_delete_confirm_modal(frame: &mut Frame) {
 }
 
 fn render_fruit_modal(frame: &mut Frame, modal: &crate::ui::modal::ModalState, title: &str) {
-    let popup_area = centered_rect(60, 50, frame.area());
-    frame.render_widget(Clear, popup_area);
+     let frame_area = frame.area();
+     
+     // Make modal responsive to terminal size - use smaller percentages for small terminals
+     let width_percent = if frame_area.width < 80 { 90 } else if frame_area.width < 120 { 75 } else { 60 };
+     let height_percent = if frame_area.height < 20 { 80 } else if frame_area.height < 30 { 60 } else { 50 };
+     
+     let popup_area = centered_rect(width_percent, height_percent, frame_area);
+     frame.render_widget(Clear, popup_area);
 
-    let inner = Layout::default()
-        .direction(Direction::Vertical)
-        .margin(1)
-        .constraints([
-            Constraint::Length(3),
-            Constraint::Length(3),
-            Constraint::Length(3),
-            Constraint::Length(3),
-            Constraint::Length(2),
-            Constraint::Min(0),
-        ])
-        .split(popup_area);
+     // Create the outer border
+     let border = Block::default()
+         .title(title)
+         .borders(Borders::ALL)
+         .border_type(ratatui::widgets::BorderType::Rounded);
+     frame.render_widget(border, popup_area);
 
-    // Name field
-    let name_style = if modal.focused_field == InputField::Name {
-        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
-    } else {
-        Style::default()
-    };
-    let name_widget = Paragraph::new(modal.name.as_str())
-        .block(Block::default().title("Name").borders(Borders::ALL))
-        .style(name_style);
-    frame.render_widget(name_widget, inner[0]);
+     // Create inner area for content (inside the border with 1px padding)
+     let inner_full = Layout::default()
+         .direction(Direction::Vertical)
+         .margin(1)
+         .constraints([Constraint::Min(0)])
+         .split(popup_area);
+     
+     let inner_area = inner_full[0];
 
-    // Length field
-    let length_style = if modal.focused_field == InputField::Length {
-        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
-    } else {
-        Style::default()
-    };
-    let length_widget = Paragraph::new(modal.length.as_str())
-        .block(Block::default().title("Length").borders(Borders::ALL))
-        .style(length_style);
-    frame.render_widget(length_widget, inner[1]);
+       let inner = Layout::default()
+           .direction(Direction::Vertical)
+           .constraints([
+               Constraint::Length(2),
+               Constraint::Length(2),
+               Constraint::Length(2),
+               Constraint::Length(2),
+               Constraint::Length(2),
+           ])
+           .split(inner_area);
 
-    // Width field
-    let width_style = if modal.focused_field == InputField::Width {
-        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
-    } else {
-        Style::default()
-    };
-    let width_widget = Paragraph::new(modal.width.as_str())
-        .block(Block::default().title("Width").borders(Borders::ALL))
-        .style(width_style);
-    frame.render_widget(width_widget, inner[2]);
+       // Helper function to render an input field with manual borders
+       let render_input_field = |frame: &mut Frame, area: Rect, label: &str, content: &str, focused: bool| {
+           let style = if focused {
+               Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+           } else {
+               Style::default()
+           };
+           
+           // Render border
+           let border = Block::default()
+               .title(label)
+               .borders(Borders::ALL)
+               .style(style);
+           frame.render_widget(border, area);
+           
+           // Render content inside (leaving space for borders: 1px on each side)
+           let content_area = Rect {
+               x: area.x + 1,
+               y: area.y + 1,
+               width: area.width.saturating_sub(2),
+               height: area.height.saturating_sub(2),
+           };
+           
+           if content_area.width > 0 && content_area.height > 0 {
+               let text_widget = Paragraph::new(content)
+                   .style(style);
+               frame.render_widget(text_widget, content_area);
+           }
+       };
 
-    // Height field
-    let height_style = if modal.focused_field == InputField::Height {
-        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
-    } else {
-        Style::default()
-    };
-    let height_widget = Paragraph::new(modal.height.as_str())
-        .block(Block::default().title("Height").borders(Borders::ALL))
-        .style(height_style);
-    frame.render_widget(height_widget, inner[3]);
+       // Name field
+       let focused_name = modal.focused_field == InputField::Name;
+       render_input_field(frame, inner[0], "Name", modal.name.as_str(), focused_name);
 
-    // Instructions
-    let instructions = Line::from(vec![
-        Span::raw("["),
-        Span::styled("Tab", Style::default().fg(Color::Cyan)),
-        Span::raw("] next  ["),
-        Span::styled("S-Tab", Style::default().fg(Color::Cyan)),
-        Span::raw("] prev  ["),
-        Span::styled("Enter", Style::default().fg(Color::Green)),
-        Span::raw("] save  ["),
-        Span::styled("Esc", Style::default().fg(Color::Red)),
-        Span::raw("] cancel"),
-    ]);
-    let instructions_widget = Paragraph::new(instructions)
-        .block(Block::default().borders(Borders::ALL))
-        .alignment(Alignment::Center);
-    frame.render_widget(instructions_widget, inner[4]);
+       // Length field
+       let focused_length = modal.focused_field == InputField::Length;
+       render_input_field(frame, inner[1], "Length", modal.length.as_str(), focused_length);
 
-    // Error message if present
-    if let Some(err) = &modal.error {
-        let error_area = centered_rect(50, 15, frame.area());
-        frame.render_widget(
-            Paragraph::new(err.as_str())
-                .block(Block::default().title("Error").borders(Borders::ALL))
-                .style(Style::default().fg(Color::Red))
-                .alignment(Alignment::Center),
-            error_area,
-        );
-    }
+       // Width field
+       let focused_width = modal.focused_field == InputField::Width;
+       render_input_field(frame, inner[2], "Width", modal.width.as_str(), focused_width);
 
-    // Border and title for the modal
-    let border = Block::default()
-        .title(title)
-        .borders(Borders::ALL)
-        .border_type(ratatui::widgets::BorderType::Rounded);
-    frame.render_widget(border, popup_area);
-}
+       // Height field
+       let focused_height = modal.focused_field == InputField::Height;
+       render_input_field(frame, inner[3], "Height", modal.height.as_str(), focused_height);
+
+     // Instructions
+     let instructions = Line::from(vec![
+         Span::raw("["),
+         Span::styled("Tab", Style::default().fg(Color::Cyan)),
+         Span::raw("] next  ["),
+         Span::styled("S-Tab", Style::default().fg(Color::Cyan)),
+         Span::raw("] prev  ["),
+         Span::styled("Enter", Style::default().fg(Color::Green)),
+         Span::raw("] save  ["),
+         Span::styled("Esc", Style::default().fg(Color::Red)),
+         Span::raw("] cancel"),
+     ]);
+     let instructions_widget = Paragraph::new(instructions)
+         .block(Block::default().borders(Borders::ALL))
+         .alignment(Alignment::Center);
+     frame.render_widget(instructions_widget, inner[4]);
+
+     // Error message if present
+     if let Some(err) = &modal.error {
+         let error_area = centered_rect(50, 15, frame.area());
+         frame.render_widget(
+             Paragraph::new(err.as_str())
+                 .block(Block::default().title("Error").borders(Borders::ALL))
+                 .style(Style::default().fg(Color::Red))
+                 .alignment(Alignment::Center),
+             error_area,
+         );
+     }
+ }
 
 fn render_error_popup(frame: &mut Frame, message: &str) {
     let popup_area = centered_rect(70, 20, frame.area());

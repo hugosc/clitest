@@ -11,6 +11,7 @@ mod error;
 mod ui;
 
 use app::{AppEvent, AppState};
+use app::state::AppMode;
 use ratatui::crossterm::event::{self, Event, KeyCode, KeyModifiers};
 
 // The main() function is where every Rust program starts executing.
@@ -25,7 +26,7 @@ fn main() -> Result<()> {
     if let Err(e) = run(&mut terminal) {
         // If an error occurred, restore the terminal to normal mode before showing the error
         ratatui::restore();
-        return Err(e.into());
+        return Err(e);
     }
 
     // If the app exited normally, restore the terminal
@@ -37,8 +38,7 @@ fn main() -> Result<()> {
 // The run() function contains the main application logic and event loop
 fn run(terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
     // Load the list of fruits from "fruits.json"
-    let fruits = load_catalogue("fruits.json")
-        .unwrap_or_else(|_| initialise_fruit_catalogue());
+    let fruits = load_catalogue("fruits.json").unwrap_or_else(|_| initialise_fruit_catalogue());
 
     // Initialize the app state
     let mut state = AppState::new(fruits);
@@ -52,7 +52,7 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
 
         // Handle user input
         if let Event::Key(key) = event::read()? {
-            // Check for Ctrl+S to save
+            // Check for Ctrl+S to save first (independent of mode)
             if key.code == KeyCode::Char('s') && key.modifiers.contains(KeyModifiers::CONTROL) {
                 match save_catalogue(&state.fruits, "fruits.json") {
                     Ok(_) => {
@@ -66,6 +66,13 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
                 continue;
             }
 
+            // In modal/filter modes, let them handle all keys including q/Esc
+            if state.mode != AppMode::Normal {
+                app::handle_event(&mut state, AppEvent::KeyPress(key))?;
+                continue;
+            }
+
+            // In Normal mode, handle q/Esc specially for quit logic
             let should_quit = match key.code {
                 KeyCode::Char('q') | KeyCode::Esc => {
                     // Only quit if there's no error message (user cleared the error first)
@@ -80,7 +87,7 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
                     }
                 }
                 _ => {
-                    // Process other key events
+                    // Process other key events through the event handler
                     app::handle_event(&mut state, AppEvent::KeyPress(key))?;
                     false
                 }
