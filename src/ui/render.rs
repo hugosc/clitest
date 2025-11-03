@@ -259,8 +259,15 @@ fn render_error_popup(frame: &mut Frame, message: &str) {
 
     frame.render_widget(Clear, popup_area);
 
+    // Check if it's a success message or error message
+    let (title, style, fg_color) = if message.starts_with('✓') {
+        ("Success", Style::default(), Color::Green)
+    } else {
+        ("Error", Style::default(), Color::Red)
+    };
+
     let para = Paragraph::new(message)
-        .block(Block::default().title("Error").borders(Borders::ALL))
+        .block(Block::default().title(title).borders(Borders::ALL).style(style.fg(fg_color)))
         .alignment(Alignment::Center);
 
     frame.render_widget(para, popup_area);

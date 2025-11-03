@@ -72,9 +72,9 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
                 continue;
             }
 
-            // In Normal mode, handle q/Esc specially for quit logic
+            // In Normal mode, handle q specially for quit logic
             let should_quit = match key.code {
-                KeyCode::Char('q') | KeyCode::Esc => {
+                KeyCode::Char('q') => {
                     // Check if we can quit
                     let can_quit = state.error_message.is_none() && !state.dirty;
                     
