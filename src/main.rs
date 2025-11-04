@@ -72,25 +72,27 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
                 continue;
             }
 
-            // In Normal mode, handle q specially for quit logic
+            // In Normal mode, handle special cases for quit and error dismissal
             let should_quit = match key.code {
                 KeyCode::Char('q') => {
-                    // Check if we can quit
-                    let can_quit = state.error_message.is_none() && !state.dirty;
-                    
-                    // If there's a success message (starts with ✓), clear it and try again next time
+                    // If there's an error/success message, clear it on first 'q'
                     if let Some(err) = &state.error_message {
                         if err.starts_with('✓') {
+                            // Success message: clear and try to quit
                             state.clear_error();
-                            // Now that success message is cleared, check if we can quit
                             state.error_message.is_none() && !state.dirty
                         } else {
-                            // Real error: clear it first, don't quit yet
+                            // Real error/warning: clear it but don't quit yet
                             state.clear_error();
                             false
                         }
+                    } else if !state.dirty {
+                        // No messages and no unsaved changes: quit
+                        true
                     } else {
-                        can_quit
+                        // Unsaved changes: let event handler show warning
+                        app::handle_event(&mut state, AppEvent::KeyPress(key))?;
+                        false
                     }
                 }
                 KeyCode::Esc => {
