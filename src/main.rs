@@ -93,6 +93,13 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> Result<()> {
                         can_quit
                     }
                 }
+                KeyCode::Esc => {
+                    // Esc clears error/success messages in Normal mode
+                    if state.error_message.is_some() {
+                        state.clear_error();
+                    }
+                    false
+                }
                 _ => {
                     // Process other key events through the event handler
                     app::handle_event(&mut state, AppEvent::KeyPress(key))?;
