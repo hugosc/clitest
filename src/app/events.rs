@@ -8,6 +8,7 @@ pub enum AppEvent {
     /// User pressed a key
     KeyPress(KeyEvent),
     /// Quit the application
+    #[allow(dead_code)]
     Quit,
 }
 

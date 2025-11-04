@@ -7,15 +7,18 @@ pub enum AppError {
     Io(#[from] std::io::Error),
 
     #[error("fruitdata error: {0}")]
+    #[allow(dead_code)]
     FruitData(String),
 
     #[error("Validation error: {0}")]
     Validation(String),
 
     #[error("Configuration error: {0}")]
+    #[allow(dead_code)]
     Config(String),
 
     #[error("An unexpected error occurred: {0}")]
+    #[allow(dead_code)]
     Other(String),
 }
 

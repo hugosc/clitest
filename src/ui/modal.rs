@@ -168,6 +168,7 @@ impl ModalState {
     }
 
     /// Clear any error message
+    #[allow(dead_code)]
     pub fn clear_error(&mut self) {
         self.error = None;
     }
